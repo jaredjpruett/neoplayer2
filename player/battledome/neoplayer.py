@@ -10,7 +10,6 @@ from ConfigParser import ConfigParser
 
 from pyvirtualdisplay import Display
 
-import re
 import sys
 import time
 import random
@@ -18,8 +17,6 @@ import datetime
 
 from url import URLs
 from xpath import XPaths
-import locators 
-import foodclub
 
 # TODO: add action that verifies user is logged in after every page load
 
@@ -31,18 +28,9 @@ class Player():
 
     error_count = 0
 
-    use_virtual = True # TODO: put into config.ini
+    use_virtual = False # TODO: put into config.ini
 
     datetime_format = '%H:%M:%S %m-%d-%Y' # TODO: put into config.ini
-
-    # Overhaul's member variables
-
-    profile  = ""
-    driver   = None
-    tries    = 3
-
-    username = ""
-    password = ""
 
     def __init__(self):
         # Parse config file, read contents into 'config' class member
@@ -80,8 +68,8 @@ class Player():
             self.fout.close()
 
     def start(self):
-        # Start virtual display
         if self.use_virtual == True:
+            # Start virtual display
             try:
                 self.display = Display(visible = self.config['visible'], size = (self.config['x'], self.config['y'])).start()
             except Exception as e:
@@ -94,8 +82,6 @@ class Player():
             #self.driver.set_window_size(self.config['x'], self.config['x']) # TODO: add resize yea or nay to config.ini
             self.driver.implicitly_wait(self.config['wait'])
             self.febx = self.driver.find_element_by_xpath
-            self.febcn = self.driver.find_element_by_class_name
-            self.febcs = self.driver.find_element_by_css_selector
         except Exception as e:
             sys.stderr.write("Exception encountered when opening WebDriver:\n%s\n" % str(e))
             sys.exit(4)
@@ -108,19 +94,16 @@ class Player():
             sys.stderr.write("Exception encountered when closing WebDriver:\n%s\n" % str(e))
 
         # Stop virtual display
-        try:
-            if self.use_virtual == True and type(self.display).__name__ == 'Display' and self.display.is_alive() == True:
-                self.display.stop()
-        except Exception as e:
-            sys.stderr.write("Exception encountered when stopping virtual display:\n%s\n" % str(e))
+        if self.use_virtual == True and type(self.display).__name__ == 'Display' and self.display.is_alive() == True:
+            self.display.stop()
 
         self.writeAndFlush("\n")
 
-    ####################################################################################################################
-    ##                                                                                                                ##
-    ##  Controls                                                                                                      ##
-    ##                                                                                                                ##
-    ####################################################################################################################
+########################################################################################################################
+##                                                                                                                    ##
+##  Controls                                                                                                          ##
+##                                                                                                                    ##
+########################################################################################################################
 
     def run(self):
         while True:
@@ -129,7 +112,6 @@ class Player():
             if self.login():
                 #self.battledome()
                 self.academy()
-                #self.bet()
             self.stop()
 
             # Exit instead of sleeping if run_once is enabled
@@ -193,24 +175,6 @@ class Player():
 
         return False
 
-    # Overhaul's login function
-    def login0(self):
-        self.getAndWait(URLs.login['login'], 0.5, 1)
-
-        element_field_username = self.febx(locators.login['field_username'].XPath)
-        element_field_password = self.febx(locators.login['field_password'].XPath)
-        element_button_login = self.febcn(locators.login['button_login'].Class)
-
-        # TODO: make sure correct elements are focused as we go
-        self.clickAndWait2(element_field_username, 0.5, 1.0)
-        self.typeAndWait(element_field_username, self.username + Keys.TAB, 0.5, 1.0)
-        self.typeAndWait(element_field_password, self.password, 0.5, 1.0)
-        self.clickAndWait2(element_button_login, 3.0, 5.0)
-
-        # TODO: wait for some new element or lack of old or url change to confirm login complete
-        #WebDriverWait(browser, delay).until(EC.presence_of_element_located((By.ID, 'IdOfMyElement')))
-        #wait(driver, 15).until_not(EC.title_is(title))
-
     def logout(self):
         if self.is_logged_in():
             try:
@@ -219,121 +183,11 @@ class Player():
             except:
                 pass
 
-    def bank(self, action, amount):
-        self.getAndWait(URLs.bank['bank'], 0.5, 1)
-
-        if action == "withdraw":
-            element_field_withdraw = self.febx(locators.bank['element_field_withdraw'].XPath)
-            element_button_withdraw = self.febx(locators.bank['element_button_withdraw'].XPath)
-
-            self.clickAndWait2(element_field_withdraw, 0.5, 1.0)
-            self.typeAndWait(element_field_withdraw, str(amount), 0.5, 1.0)
-            self.clickAndWait2(element_button_withdraw, 1.5, 2.5)
-
-            # TODO: formal driver wait for dialog box
-            try:
-                self.driver.switch_to.alert.accept()
-                self.sleepRange(1.0, 2.0)
-            except:
-                pass
-
-    ####################################################################################################################
-    ##                                                                                                                ##
-    ##  Wrappers                                                                                                      ##
-    ##                                                                                                                ##
-    ####################################################################################################################
-
-    # TODO: always check to see if we're logged in
-    def getAndWait(self, url, sleep_lower, sleep_upper):
-        try:
-            self.driver.get(url)
-            self.sleepRange(sleep_lower, sleep_upper)
-            return True
-        except Exception as e:
-            sys.stderr.write("getAndWait: encountered exception: %s\n", e.message)
-            return False
-
-    def clickAndWait(self, element, lower, upper):
-        element.click()
-        time.sleep(random.uniform(lower, upper))
-
-    # Overhaul's clickAndWait
-    def clickAndWait2(self, element, sleep_lower, sleep_upper):
-        try:
-            element.click()
-            self.sleepRange(sleep_lower, sleep_upper)
-            return True
-        except Exception as e:
-            sys.stderr.write("clickAndWait2: encountered exception: %s\n", e.message)
-            return False
-
-    def typeAndWait(self, element, keys, sleep_lower, sleep_upper):
-        try:
-            for letter in keys:
-                element.send_keys(letter)
-                self.sleepRange(0.05, 0.07, 1.0)
-            self.sleepRange(sleep_lower, sleep_upper)
-            return True
-        except Exception as e:
-            sys.stderr.write("typeAndWait: encountered exception: %s\n", e.message)
-            return False
-
-    def selectAndWait(self, element, value, sleep_lower, sleep_upper):
-        try:
-            element.select_by_value(value)
-            self.sleepRange(sleep_lower, sleep_upper)
-            return True
-        except Exception as e:
-            sys.stderr.write("selectAndWait: encountered exception: %s\n", e.message)
-            return False
-
-    def sleepRange(self, lower, upper, variation = 1.25):
-        lower = random.uniform(lower / variation, lower * variation)
-        upper = random.uniform(lower / variation, upper * variation)
-        time.sleep(random.uniform(lower, upper))
-
-    def writeAndFlush(self, string):
-        print string
-
-        try:
-            self.fout = open(self.config['logfile'], 'a')
-        except Exception as e:
-            sys.stderr.write("Exception encountered when opening log file.\n")
-            sys.stderr.write("Logged message: %s - %s\n" % (datetime.datetime.now().strftime(self.datetime_format), string))
-            return
-
-        try:
-            self.fout.write("%s - %s\n" % (datetime.datetime.now().strftime(self.datetime_format), string))
-            self.fout.flush()
-        except:
-            sys.stderr.write("Exception encountered when writing to log file.\n")
-            sys.stderr.write("Logged message: %s - %s\n" % (datetime.datetime.now().strftime(self.datetime_format), string))
-
-        if type(self.fout).__name__ == 'file' and self.fout.closed == False:
-            self.fout.close()
-
-    ####################################################################################################################
-    ##                                                                                                                ##
-    ##  Auxiliary                                                                                                     ##
-    ##                                                                                                                ##
-    ####################################################################################################################
-
-    # TODO: instead, check for login button or the sign in page
-    def is_logged_in(self):
-        try:
-            logout = self.driver.find_element_by_id('logout_link')
-            return logout.is_displayed()
-        except:
-            return False
-
-    def get_logged_in_username(self):
-        return self.febx(XPaths.account['username']).text
-
-    ####################################################################################################################
-    ##                                                                                                                ##
-    ##  Battledome                                                                                                    ##
-    ##                                                                                                                ##
-    ####################################################################################################################
+########################################################################################################################
+##                                                                                                                    ##
+##  Battledome                                                                                                        ##
+##                                                                                                                    ##
+########################################################################################################################
 
     def battledome(self):
         # TODO: change checks so this doesn't need to be used
@@ -507,11 +361,11 @@ class Player():
         except:
             pass # If element is not found, either the battle isn't over or something bad happened
 
-    ####################################################################################################################
-    ##                                                                                                                ##
-    ##  Academy                                                                                                       ##
-    ##                                                                                                                ##
-    ####################################################################################################################
+########################################################################################################################
+##                                                                                                                    ##
+##  Academy                                                                                                           ##
+##                                                                                                                    ##
+########################################################################################################################
 
     def academy(self):
         if self.check_if_enrolled():
@@ -627,85 +481,70 @@ class Player():
             #self.writeAndFlush("Couldn't complete course at Swashbuckling Academy.")
             pass # Pet was probably simply not on a course.
 
-    ####################################################################################################################
-    ##                                                                                                                ##
-    ##  Food Club                                                                                                     ##
-    ##                                                                                                                ##
-    ####################################################################################################################
+########################################################################################################################
+##                                                                                                                    ##
+##  Auxiliary                                                                                                         ##
+##                                                                                                                    ##
+########################################################################################################################
 
-    # TODO: validate bets before beginning
-    def bet(self):
-        # TODO: count bets to see if they're already placed
-        #self.getAndWait(URLs.foodclub['current'], 1.0, 2.0)
-        #bets_table = febx(xpath_current['bets_table'])
-        #bets_rows = bets_table.find_elements_by_tag_name('tr')
+    # TODO: instead, check for login button or the sign in page
+    def is_logged_in(self):
+        try:
+            logout = self.driver.find_element_by_id('logout_link')
+            return logout.is_displayed()
+        except:
+            return False
 
-        self.getAndWait(URLs.foodclub['boochi'], 0.5, 1.0)
+    def get_logged_in_username(self):
+        return self.febx(XPaths.account['username']).text
 
-        # The date the bets are for
-        bets_for = self.febcs("body > center:nth-child(6) > p:nth-child(1) > font:nth-child(1)").text
+########################################################################################################################
+##                                                                                                                    ##
+##  Wrappers                                                                                                          ##
+##                                                                                                                    ##
+########################################################################################################################
 
-        # Each set consists of one or more pairs
-        sets = []
+    # Get URL and sleep
+    def getAndWait(self, url, lower, upper):
+        self.driver.get(url)
+        time.sleep(random.uniform(lower, upper))
+        #if self.is_logged_in() == False:
+        #    self.writeAndFlush("It appears we're logged out.")
+        #    self.login()
+        #    if self.login() == False:
+        #        self.writeAndFlush("We don't seem to be able to log back in.")
 
-        # Forumlate set of all bets by parsing somebody's bets table
-        source = self.driver.page_source
-        bets = re.findall("<td><b>[^=]+<br><\/td>", source)
-        for bet in bets:
-            # Each pair consist of arena name and pirate name
-            pairs = re.findall("<b>([^<]*)<\/b>: ([^<]*)<br>", bet)
-            s = []
-            for pair in pairs:
-                s.append(pair)
-            sets.append(s)
+    # Click element and sleep
+    def clickAndWait(self, element, lower, upper):
+        element.click()
+        time.sleep(random.uniform(lower, upper))
 
-        self.getAndWait(URLs.foodclub['place'], 0.5, 1.0)
+    # Send keys to element and sleep
+    def typeAndWait(self, element, keys, lower, upper):
+        element.send_keys(keys)
+        time.sleep(random.uniform(lower, upper))
 
-        # TODO: instead of or in addtion to this, validate scraped bets as possible for the current day
-        next_round = str([int(c) for c in self.febcs(".content > center:nth-child(1) > b:nth-child(2)").text.split() if c.isdigit()][0])
-        if next_round not in bets_for:
-            sys.stderr.write("These bets don't appear to be up to date.\n")
+    # Write string to log with timestamp and newline
+    def writeAndFlush(self, string):
+        # Attempt to open log file
+        try:
+            self.fout = open(self.config['logfile'], 'a')
+        except Exception as e:
+            sys.stderr.write("Exception encountered when opening log file.\n")
+            sys.stderr.write("Logged message: %s - %s\n" % (datetime.datetime.now().strftime(self.datetime_format), string))
             return
 
-        # Parse bet amount from bets page, withdraw for ten bets
-        amount = self.febx(foodclub.xpath_foodclub['bet_amount']).text
-        self.bank('withdraw', str(int(amount) * 10))
+        # Attempt to write message
+        try:
+            self.fout.write("%s - %s\n" % (datetime.datetime.now().strftime(self.datetime_format), string))
+            self.fout.flush()
+        except:
+            sys.stderr.write("Exception encountered when writing to log file.\n")
+            sys.stderr.write("Logged message: %s - %s\n" % (datetime.datetime.now().strftime(self.datetime_format), string))
 
-        # Place each set of bets
-        for s in sets:
-            self.getAndWait(URLs.foodclub['place'], 1.0, 2.0)
-            bet_element = self.febx(foodclub.xpath_foodclub['place_bet'])
-            # Pairs consist of arena in first index, pirate in second
-            for pair in s:
-                element_arena = self.febx(foodclub.xpath_arena[pair[0]])                                               # Arena checkbox element
-                element_pirate = self.febx(foodclub.xpath_pirate[pair[0]])                                             # Pirate option element?
-                element_option = Select(element_pirate)                                                                # Arena pirate option box element
-                self.clickAndWait2(element_arena, 0.5, 1.0)                                                             # Click arena checkbox
-                self.selectAndWait(element_option, foodclub.dict_pirates[pair[1]], 0.5, 1.0)                           # Select pirate from option box
-            element_amount = self.febx(foodclub.xpath_foodclub['bet_box'])                                             # Bet amount text box element
-            self.clickAndWait2(element_amount, 0.5, 1.0)
-            self.typeAndWait(element_amount, amount, 0.5, 1.0)
-            self.clickAndWait2(bet_element, 2.0, 3.0)
-            #self.wait()
-            WebDriverWait(self.driver, 10).until_not(EC.title_is(URLs.foodclub['place']))
-    
-    def wait(self):
-        for count in xrange(0, 30):
-            # Look for success page
-            try:
-                bets = self.febx(foodclub.xpath_foodclub['current_bets'])
-                bets.click() # ???
-                if bets.text == "Current Bets": # ???
-                    return
-            except:
-                # Look for duplicate bet page
-                try:
-                    bets = self.febx(foodclub.xpath_foodclub['duplicate'])
-                    bets.click() # ???
-                    return
-                except:
-                    count += 1
-                    self.sleepRange(1.0, 2.0)
+        # Close log file
+        if type(self.fout).__name__ == 'file' and self.fout.closed == False:
+            self.fout.close()
 
 ########################################################################################################################
 ##                                                                                                                    ##
