@@ -23,7 +23,7 @@ class Player():
 	username	= parser.get('account', 'username')
 	password	= parser.get('account', 'password')
 	profile		= parser.get('player', 'profile')
-	log			= parser.get('io', 'log')
+	log			= parser.get('io', 'logfile')
 
 	def __init__(self):
 		self.display	= Display(visible = 0, size = (1920, 1080)).start()
