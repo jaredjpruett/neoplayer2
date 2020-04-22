@@ -9,5 +9,5 @@ function requireTmux() {
 
 #requireTmux
 
-python -B main.py
+python -B neoplayer.py
 rm -f geckodriver.log
