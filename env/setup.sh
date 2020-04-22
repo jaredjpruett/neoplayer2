@@ -1,27 +1,19 @@
 #!/bin/bash
 
-REPODIR=""
-
-# Install pip and xvfb
-sudo apt-get install python-pip xvfb xserver-xephyr
-
-# Install pip packages
-sudo pip install selenium pyvirtualdisplay
-
-# Copy profile
+repodir="<path>"
 profile="$HOME/.mozilla/firefox/neoplayer"
 profiles="$HOME/.mozilla/firefox/profiles.ini"
+
+apt update && apt upgrade -Y && apt install python-pip xvfb xserver-xephyr && pip install selenium pyvirtualdisplay
+
 if [[ -e "$profile" ]]; then
-	if [[ -e "${profile}.OLD" ]]; then
-		rm -rf "${profile}.OLD"
-	fi
+	[[ -e "${profile}.OLD" ]] && rm -rf "${profile}.OLD"
 	mv "$profile" "${profile}.OLD"
 fi
 if [[ -e "$profiles" ]]; then
-	if [[ -e "${profiles}.OLD" ]]; then
-		rm "${profiles}.OLD"
-	fi
+	[[ -e "${profiles}.OLD" ]] && "${profiles}.OLD"
 	mv "$profiles" "${profiles}.OLD"
 fi
-cp -R "$REPODIR/env/profile/neoplayer" "$profile"
-cp "$REPODIR/env/profile/profiles.ini" "$profiles"
+
+cp -R "$repodir/env/profile/neoplayer" "$profile"
+cp "$repodir/env/profile/profiles.ini" "$profiles"
