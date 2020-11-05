@@ -80,7 +80,7 @@ class Player():
 
             # Verify login
             try:
-                if self.febx(xpath['loggedin']).text == "asdf":
+                if self.febx(xpath['loggedin']).text == "<username>":
                     self.fout.write("Successful login confirmed.\n")
                     self.fout.flush()
                 else:
