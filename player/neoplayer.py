@@ -16,7 +16,7 @@ import locators
 import foodclub
 
 class Player():
-    profile  = ""
+    profile  = "$HOME/.mozilla/firefox/neoplayer"
     driver   = None
     tries    = 3
 

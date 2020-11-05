@@ -1,9 +1,9 @@
 ﻿// ==UserScript==
 // @name            SearchIdentical
-// @namespace       https://github.com/jaredjpruett
+// @namespace       https://github.com/shanktank
 // @include         http://www.neopets.com/market.phtml?type=wizard
 // @include         http://www.neopets.com/island/tradingpost.phtml?type=browse
-// @version         2.0
+// @version         2.1
 // @grant           none
 // ==/UserScript==
 
